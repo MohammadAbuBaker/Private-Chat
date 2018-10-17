@@ -1,0 +1,72 @@
+// Auth create korse login and registration er jonno
+D:\Xampp\htdocs>cd private-chat
+
+D:\Xampp\htdocs\private-chat>php artisan make:auth
+Authentication scaffolding generated successfully.
+
+D:\Xampp\htdocs\private-chat>npm install
+
+//kono kiso change korle aita automatic save dekabe
+D:\Xampp\htdocs\private-chat>npm run watch
+
+
+D:\Xampp\htdocs\private-chat>php artisan make:migration CreateSessionTable --create=session
+Created Migration: 2018_10_04_150953_create_session_table
+
+
+D:\Xampp\htdocs\private-chat>php artisan migrate
+Migration table created successfully.
+Migrating: 2014_10_12_000000_create_users_table
+Migrated:  2014_10_12_000000_create_users_table
+Migrating: 2014_10_12_100000_create_password_resets_table
+Migrated:  2014_10_12_100000_create_password_resets_table
+Migrating: 2018_10_04_151124_create_session_table
+Migrated:  2018_10_04_151124_create_session_table
+
+//for scroll
+PS D:\Xampp\htdocs\private-chat> npm install --save vue-chat-scroll
+
+D:\Xampp\htdocs\private-chat>php artisan make:migration CreateMessagesTable --create=messages
+Created Migration: 2018_10_04_152639_create_messages_table
+
+PS D:\Xampp\htdocs\private-chat> php artisan migrate
+Migrating: 2018_10_04_152639_create_messages_table
+Migrated:  2018_10_04_152639_create_messages_table
+
+D:\Xampp\htdocs\private-chat>php artisan make:migration CreateChatsTable --create=chats
+Created Migration: 2018_10_04_153200_create_chats_table
+
+D:\Xampp\htdocs\private-chat>php artisan migrate
+Migrating: 2018_10_04_153200_create_chats_table
+Migrated:  2018_10_04_153200_create_chats_table
+
+
+PS D:\Xampp\htdocs\private-chat> php artisan db:seed
+
+Model created successfully.
+PS D:\Xampp\htdocs\private-chat> php artisan make:model Models/Chat
+Model created successfully.
+PS D:\Xampp\htdocs\private-chat> php artisan make:model Models/Message
+Model created successfully.
+PS D:\Xampp\htdocs\private-chat> php artisan make:model Models/Session
+Model created successfully.
+
+PS D:\Xampp\htdocs\private-chat> php artisan make:controller ChatController
+Controller created successfully.
+PS D:\Xampp\htdocs\private-chat> php artisan make:controller BlockController
+Controller created successfully.
+PS D:\Xampp\htdocs\private-chat> php artisan make:controller SessionController
+
+
+PS D:\Xampp\htdocs\private-chat> php artisan make:resource ChatResource
+Resource created successfully.
+PS D:\Xampp\htdocs\private-chat> php artisan make:resource SessionResource
+Resource created successfully.
+PS D:\Xampp\htdocs\private-chat> php artisan make:resource MessageResource
+Resource created successfully.
+PS D:\Xampp\htdocs\private-chat> php artisan make:resource UserResource
+Resource created successfully.
+
+
+PS D:\Xampp\htdocs\private-chat> php artisan make:event SessionEvent
+Event created successfully.
