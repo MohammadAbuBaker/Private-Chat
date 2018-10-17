@@ -83,9 +83,14 @@ export default {
         },
         getAllMessages(){
             axios.post(`/session/${this.friend.session.id}/chats`).then(res=>this.chats=res.data.data);
+        },
+        read() {
+            axios.post(`/session/${this.friend.session.id}/read`);
         }
     },
     created(){
+        this.read();
+
        this.getAllMessages();
 
    
@@ -93,7 +98,7 @@ export default {
      Echo.private(`Chat.${this.friend.session.id}`).listen(
       "PrivateChatEvent",
       e => {
-        
+        this.read();
         this.chats.push({ message: e.content, type: 1, sent_at: "Just Now" });
       }
     );
