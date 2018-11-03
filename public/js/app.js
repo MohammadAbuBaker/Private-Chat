@@ -57825,6 +57825,8 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 //
 //
 //
+//
+//
 
 /* harmony default export */ __webpack_exports__["default"] = ({
 
@@ -57832,43 +57834,80 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
     data: function data() {
         return {
             chats: [],
-            session_block: false,
-            message: null
+            message: null,
+            isTyping: false
 
         };
     },
 
+    computed: {
+        session: function session() {
+            return this.friend.session;
+        },
+        can: function can() {
+            return this.session.blocked_by == auth.id;
+        }
+    },
+    watch: {
+        message: function message(value) {
+            if (value) {
+                Echo.private('Chat.' + this.friend.session.id).whisper("typing", {
+                    name: auth.name
+                });
+            }
+        }
+    },
     methods: {
         send: function send() {
+            var _this = this;
+
             if (this.message) {
                 this.pushToChats(this.message);
                 axios.post('/send/' + this.friend.session.id, {
                     content: this.message,
                     to_user: this.friend.id
+                }).then(function (res) {
+                    return _this.chats[_this.chats.length - 1].id = res.data;
                 });
+
                 this.message = null;
             }
         },
         pushToChats: function pushToChats(message) {
-            this.chats.push({ message: message, type: 0, sent_at: 'Just Now' });
+            this.chats.push({ message: message, type: 0, read_at: null, sent_at: 'Just Now' });
         },
         close: function close() {
             this.$emit('close');
         },
         clear: function clear() {
+            var _this2 = this;
+
             this.chats = [];
+            axios.post('/session/' + this.friend.session.id + '/clear').then(function (res) {
+                return _this2.chats = [];
+            });
         },
         block: function block() {
-            this.session_block = true;
+            var _this3 = this;
+
+            this.session.block = true;
+            axios.post('/session/' + this.friend.session.id + '/block').then(function (res) {
+                return _this3.session.blocked_by = auth.id;
+            });
         },
         unblock: function unblock() {
-            this.session_block = false;
+            var _this4 = this;
+
+            this.session.block = false;
+            axios.post('/session/' + this.friend.session.id + '/unblock').then(function (res) {
+                return _this4.session.blocked_by = null;
+            });
         },
         getAllMessages: function getAllMessages() {
-            var _this = this;
+            var _this5 = this;
 
             axios.post('/session/' + this.friend.session.id + '/chats').then(function (res) {
-                return _this.chats = res.data.data;
+                return _this5.chats = res.data.data;
             });
         },
         read: function read() {
@@ -57876,15 +57915,32 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
         }
     },
     created: function created() {
-        var _this2 = this;
+        var _this6 = this;
 
         this.read();
 
         this.getAllMessages();
 
         Echo.private('Chat.' + this.friend.session.id).listen("PrivateChatEvent", function (e) {
-            _this2.read();
-            _this2.chats.push({ message: e.content, type: 1, sent_at: "Just Now" });
+            _this6.friend.session.open ? _this6.read() : "";
+            _this6.chats.push({ message: e.content, type: 1, sent_at: "Just Now" });
+        });
+
+        Echo.private('Chat.' + this.friend.session.id).listen("MsgReadEvent", function (e) {
+            return _this6.chats.forEach(function (chat) {
+                return chat.id == e.chat.id ? chat.read_at = e.chat.read_at : "";
+            });
+        });
+
+        Echo.private('Chat.' + this.friend.session.id).listen("BlockEvent", function (e) {
+            return _this6.session.block = e.blocked;
+        });
+
+        Echo.private('Chat.' + this.friend.session.id).listenForWhisper("typing", function (e) {
+            _this6.isTyping = true;
+            setTimeout(function () {
+                _this6.isTyping = false;
+            }, 2000);
         });
     }
 });
@@ -57899,9 +57955,13 @@ var render = function() {
   var _c = _vm._self._c || _h
   return _c("div", { staticClass: "card card-default chat-box" }, [
     _c("div", { staticClass: "card-header" }, [
-      _c("b", { class: { "text-danger": _vm.session_block } }, [
-        _vm._v("\n             " + _vm._s(_vm.friend.name) + "\n             "),
-        _vm.session_block ? _c("span", [_vm._v("(Blocked)")]) : _vm._e()
+      _c("b", { class: { "text-danger": _vm.session.block } }, [
+        _vm._v("\n             " + _vm._s(_vm.friend.name) + " "),
+        _vm.isTyping
+          ? _c("span", { staticClass: "small" }, [_vm._v("is Typing . . .")])
+          : _vm._e(),
+        _vm._v(" "),
+        _vm.session.block ? _c("span", [_vm._v("(Blocked)")]) : _vm._e()
       ]),
       _vm._v(" "),
       _c(
@@ -57933,7 +57993,7 @@ var render = function() {
             attrs: { "aria-labelledby": "dropdownMenuButton" }
           },
           [
-            _vm.session_block
+            _vm.session.block && _vm.can
               ? _c(
                   "a",
                   {
@@ -57946,9 +58006,12 @@ var render = function() {
                       }
                     }
                   },
-                  [_vm._v("Unblock")]
+                  [_vm._v("UnBlock")]
                 )
-              : _c(
+              : _vm._e(),
+            _vm._v(" "),
+            !_vm.session.block
+              ? _c(
                   "a",
                   {
                     staticClass: "dropdown-item",
@@ -57961,7 +58024,8 @@ var render = function() {
                     }
                   },
                   [_vm._v("Block")]
-                ),
+                )
+              : _vm._e(),
             _vm._v(" "),
             _c(
               "a",
@@ -57994,9 +58058,21 @@ var render = function() {
           {
             key: chat.id,
             staticClass: "card-text",
-            class: { "text-right": chat.type == 0 }
+            class: {
+              "text-right": chat.type == 0,
+              "text-success": chat.read_at != null
+            }
           },
-          [_vm._v("\n            " + _vm._s(chat.message) + "\n        ")]
+          [
+            _vm._v(
+              "\n             " + _vm._s(chat.message) + "\n              "
+            ),
+            _c("br"),
+            _vm._v(" "),
+            _c("span", { staticStyle: { "font-size": "8px" } }, [
+              _vm._v(_vm._s(chat.read_at))
+            ])
+          ]
         )
       })
     ),
@@ -58026,7 +58102,7 @@ var render = function() {
             staticClass: "form-control",
             attrs: {
               type: "text",
-              disabled: _vm.session_block,
+              disabled: _vm.session.block,
               placeholder: "Write your message here"
             },
             domProps: { value: _vm.message },
